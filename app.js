@@ -123,7 +123,6 @@ async function registerWithEmail() {
     }
     alert("Account created!"); enterMainHub();
 }
-
 function enterMainHub() {
     document.getElementById('screenAuth').classList.add('hidden');
     document.getElementById('screenMainHub').classList.remove('hidden');
@@ -314,7 +313,7 @@ function openSettingsModal() {
             </button>`;
     } else {
         actionBox.innerHTML = `
-            <button onclick="logoutPlayer()" class="w-full bg-red-600/25 hover:bg-red-600/35 text-red-400 font-bold py-2.5 rounded-xl text-xs border border-red-500/40 shadow">
+            <button onclick="logoutPlayer()" class="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-2.5 rounded-xl text-xs border border-red-500/40 shadow">
                 Sign Out / Log Out 🚪
             </button>`;
     }
@@ -679,7 +678,6 @@ function renderPlayerGrid() {
 }
 
 function initCanvasAnimation() {
-    // Optional background particle animation if canvas exists
     const canvas = document.getElementById('bgCanvas');
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
