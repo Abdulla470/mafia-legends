@@ -123,6 +123,7 @@ async function registerWithEmail() {
     }
     alert("Account created!"); enterMainHub();
 }
+
 function enterMainHub() {
     document.getElementById('screenAuth').classList.add('hidden');
     document.getElementById('screenMainHub').classList.remove('hidden');
@@ -368,7 +369,7 @@ async function enterOrRegisterRoom(code, maxP) {
             hostName: myName,
             players: [{ name: myName, role: 'Citizen', alive: true, avatar: myAvatar }],
             nightActions: { mafiaTarget: null, doctorTarget: null, policeTarget: null },
-            votes: {}, chatMessages: [], mafiaChatMessages: [], lastNightResult: "Lobby formed."
+            votes: {}, chatMessages: [], mafiaChatMessages: [], lastNightResult: "Waiting for players to join..."
         };
     } else {
         gameState = data.state;
@@ -384,7 +385,14 @@ async function enterOrRegisterRoom(code, maxP) {
 
     await supabaseClient.from('game_rooms').upsert({ room_code: code, state: gameState });
     setupRealtime(code);
-    enterDashboard();
+
+    // FIX: Instead of instantly auto-starting the game, check if we need to wait or enter dashboard properly
+    if (gameState.status === "playing") {
+        enterDashboard();
+    } else {
+        // Show lobby/waiting state properly instead of broken dashboard
+        enterDashboard();
+    }
 }
 
 function assignRolesAndStartGame() {
@@ -458,7 +466,15 @@ function renderGameDashboard() {
     const dayCard = document.getElementById('dayActionCard');
     const chatSec = document.getElementById('dayChatSection');
 
-    if (gameState.phase === "night") {
+    if (gameState.status !== "playing") {
+        // Waiting state for automated matchmaking
+        document.getElementById('badgePhase').innerText = "Waiting for Players ⏳";
+        document.getElementById('titlePhase').innerText = `Players in room: ${gameState.players.length} / ${gameState.maxPlayers}`;
+        nightCard.classList.add('hidden');
+        dayCard.classList.add('hidden');
+        chatSec.classList.remove('hidden');
+        renderChatMessages();
+    } else if (gameState.phase === "night") {
         document.getElementById('badgePhase').innerText = "Night Phase 🌙";
         document.getElementById('titlePhase').innerText = gameState.lastNightResult;
         dayCard.classList.add('hidden'); chatSec.classList.add('hidden');
@@ -661,7 +677,9 @@ function renderMafiaChatMessages() {
 }
 
 function renderPlayerGrid() {
-    document.getElementById('playerGrid').innerHTML = gameState.players.map(p => `
+    const grid = document.getElementById('playerGrid');
+    if (!grid) return;
+    grid.innerHTML = gameState.players.map(p => `
         <div class="p-3 rounded-xl border flex justify-between items-center ${p.alive ? 'bg-slate-950 border-slate-800 shadow-inner' : 'eliminated-card'}">
             <div class="flex items-center gap-2">
                 <span class="text-xl">${p.avatar || '👤'}</span>
