@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mafia Legends - AAA Party Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body id="appBody" class="bg-game-radial text-slate-100 min-h-screen font-sans selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- ================= SCREEN 1: SPLASH & MONOGRAM ================= -->
+    <div id="screenSplash" class="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-8 bg-game-radial">
+        <div class="space-y-3">
+            <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Next-Gen Luxury Experience</span>
+            <h1 class="text-5xl sm:text-7xl font-black tracking-wider text-amber-400 uppercase luxury-glow">Mafia Legends</h1>
+        </div>
+
+        <div class="relative w-72 h-72 bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/40 rounded-3xl p-6 shadow-2xl mafia-glow floating flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent"></div>
+            <div class="grid grid-cols-2 gap-3 z-10 w-full h-full p-2">
+                <div class="bg-slate-900/90 border border-amber-500/20 rounded-2xl flex flex-col items-center justify-center p-2 shadow-inner">
+                    <span class="text-4xl">🗡️</span>
+                    <span class="text-[10px] uppercase font-bold text-red-400 mt-1">Syndicate</span>
+                </div>
+                <div class="bg-slate-900/90 border border-amber-500/20 rounded-2xl flex flex-col items-center justify-center p-2 shadow-inner">
+                    <span class="text-4xl">💉</span>
+                    <span class="text-[10px] uppercase font-bold text-emerald-400 mt-1">Doctor</span>
+                </div>
+                <div class="col-span-2 bg-slate-900/90 border border-amber-500/20 rounded-2xl flex items-center justify-center gap-3 p-2 shadow-inner">
+                    <span class="text-3xl">🕵️‍♂️</span>
+                    <span class="text-xs uppercase font-bold text-indigo-400">Detective Network</span>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="proceedToAuth()" class="w-full max-w-xs bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black py-4 px-8 rounded-2xl shadow-2xl text-sm tracking-wider uppercase transition transform active:scale-95 border border-amber-300/50">
+            Enter Table ⚡
+        </button>
+    </div>
+
+    <!-- ================= SCREEN 2: AUTHENTICATION ROUTER ================= -->
+    <div id="screenAuth" class="min-h-screen flex items-center justify-center p-4 hidden bg-game-radial">
+        <div class="bg-slate-900/95 border border-amber-500/30 rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 text-center backdrop-blur-xl">
+            <h2 class="text-2xl font-black text-amber-400">Player Authentication</h2>
+            <p class="text-xs text-slate-400">Sync your profile across all devices or start instantly in Guest Mode.</p>
+            
+            <div class="space-y-3">
+                <button onclick="loginWithGoogle()" class="w-full bg-slate-950 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl text-xs border border-slate-800 flex items-center justify-center gap-3 transition">
+                    <span>🌐</span> Continue with Google
+                </button>
+                <button onclick="loginWithFacebook()" class="w-full bg-blue-700/80 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-3 transition">
+                    <span>📘</span> Continue with Facebook
+                </button>
+            </div>
+
+            <div class="relative flex py-2 items-center">
+                <div class="flex-grow border-t border-slate-800"></div>
+                <span class="flex-shrink mx-4 text-slate-500 text-[10px] uppercase font-mono">Or Email</span>
+                <div class="flex-grow border-t border-slate-800"></div>
+            </div>
+
+            <div class="space-y-3 text-left">
+                <input type="email" id="inputEmail" placeholder="player@example.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                <input type="password" id="inputPassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                <div class="flex gap-2">
+                    <button onclick="loginWithEmail()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-2.5 rounded-xl text-xs">Sign In</button>
+                    <button onclick="registerWithEmail()" class="flex-1 bg-slate-950 hover:bg-slate-900 text-slate-200 font-bold py-2.5 rounded-xl text-xs border border-slate-800">Register</button>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="playAsGuest()" class="w-full bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold py-3 rounded-xl text-xs border border-emerald-500/40 transition">Play as Guest (Local Mode) 🎮</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SCREEN 3: MAIN LOBBY HUB ================= -->
+    <div id="screenMainHub" class="min-h-screen flex flex-col hidden pb-24 bg-game-radial">
+        <!-- TOP HUD HEADER -->
+        <header id="appHeader" class="bg-slate-900/90 border-b border-amber-500/20 p-3 sm:p-4 sticky top-0 z-50 shadow-xl backdrop-blur-md">
+            <div class="max-w-4xl mx-auto flex justify-between items-center">
+                <button onclick="openProfileModal()" class="flex items-center gap-2.5 bg-slate-950 hover:bg-slate-900 px-3.5 py-2 rounded-2xl border border-amber-500/30 transition active:scale-95 shadow-inner">
+                    <div id="hudAvatarContainer" class="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-sm bg-amber-500/20 text-amber-400 font-bold">👑</div>
+                    <div class="text-left">
+                        <div id="hudUsername" class="text-xs font-black text-slate-100">Abdullah</div>
+                        <div class="flex items-center gap-1.5">
+                            <span id="hudLevelBadge" class="text-[9px] bg-amber-500/20 text-amber-400 font-bold px-1.5 py-0.5 rounded border border-amber-500/30">Lvl 1</span>
+                            <span id="hudTitle" class="text-[9px] text-amber-400 font-mono font-bold">Unranked Citizen</span>
+                        </div>
+                    </div>
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="switchTab('tabShop')" class="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 px-3 py-1.5 rounded-xl border border-amber-500/20 text-xs font-mono transition shadow-inner">
+                        <span>🪙</span> <span id="hudCoins" class="text-amber-400 font-bold">10,500</span> <span class="text-xs text-emerald-400 font-black">+</span>
+                    </button>
+                    <button onclick="switchTab('tabShop')" class="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 px-3 py-1.5 rounded-xl border border-amber-500/20 text-xs font-mono transition shadow-inner">
+                        <span>💎</span> <span id="hudGems" class="text-cyan-400 font-bold">250</span> <span class="text-xs text-emerald-400 font-black">+</span>
+                    </button>
+                    <button onclick="openSettingsModal()" class="bg-slate-950 hover:bg-slate-900 p-2 rounded-xl border border-amber-500/20 text-xs text-slate-300 active:scale-95 shadow-inner">⚙️</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN HUB CONTENT -->
+        <main class="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-6 space-y-6">
+            <!-- TAB 1: LOBBY MATCHMAKING TILES -->
+            <div id="tabLobby" class="tab-content active space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="joinAutomatedMatchmaking(6)" class="bg-gradient-to-b from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-amber-500/30 hover:border-amber-400 p-6 rounded-3xl text-center transition space-y-2 flex flex-col items-center justify-center shadow-2xl group">
+                        <span class="text-4xl group-hover:scale-110 transition">👥</span>
+                        <div class="text-sm font-black text-slate-100">6 Players</div>
+                        <div class="text-[10px] text-slate-400">Casual Quick Match</div>
+                        <div class="text-xs text-amber-400 font-mono font-bold">🪙 500 Entry</div>
+                    </button>
+                    <button onclick="joinAutomatedMatchmaking(8)" class="bg-gradient-to-b from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-amber-500/30 hover:border-amber-400 p-6 rounded-3xl text-center transition space-y-2 flex flex-col items-center justify-center shadow-2xl group">
+                        <span class="text-4xl group-hover:scale-110 transition">👥👥</span>
+                        <div class="text-sm font-black text-slate-100">8 Players</div>
+                        <div class="text-[10px] text-slate-400">Ranked Match</div>
+                        <div class="text-xs text-amber-400 font-mono font-bold">🪙 1,000 Entry</div>
+                    </button>
+                    <button onclick="joinAutomatedMatchmaking(12)" class="bg-gradient-to-b from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-amber-500/30 hover:border-amber-400 p-6 rounded-3xl text-center transition space-y-2 flex flex-col items-center justify-center shadow-2xl group">
+                        <span class="text-4xl group-hover:scale-110 transition">🔥</span>
+                        <div class="text-sm font-black text-slate-100">12 Players</div>
+                        <div class="text-[10px] text-slate-400">Grand War</div>
+                        <div class="text-xs text-amber-400 font-mono font-bold">🪙 2,500 Entry</div>
+                    </button>
+                    <button onclick="openPrivateRoomModal()" class="bg-gradient-to-b from-slate-900 to-slate-950 hover:from-slate-800 hover:to-slate-900 border border-amber-500/30 hover:border-amber-400 p-6 rounded-3xl text-center transition space-y-2 flex flex-col items-center justify-center shadow-2xl group">
+                        <span class="text-4xl group-hover:scale-110 transition">🔒</span>
+                        <div class="text-sm font-black text-slate-100">Private Table</div>
+                        <div class="text-[10px] text-slate-400">Create or Join Code</div>
+                        <div class="text-xs text-indigo-400 font-mono font-bold">Custom Room</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: NIGHT CLUB -->
+            <div id="tabNightClub" class="tab-content space-y-4">
+                <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-6 rounded-3xl border border-amber-500/30 text-center space-y-3 shadow-2xl">
+                    <span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Late Night Event 🌃</span>
+                    <h2 class="text-2xl font-black text-amber-400">Late Night Event Lounge</h2>
+                    <p class="text-xs text-slate-400">Opens daily at 10:00 PM local time. Earn 2x Gang Points and Coin jackpots!</p>
+                </div>
+            </div>
+
+            <!-- TAB 3: GANG WARS -->
+            <div id="tabGangWars" class="tab-content space-y-4">
+                <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-6 rounded-3xl border border-amber-500/30 space-y-4 shadow-2xl">
+                    <h2 class="text-xl font-black text-amber-400">🛡️ Gang Wars & Squads</h2>
+                    <div id="gangStatusBox" class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs space-y-2">
+                        <p id="gangNameDisplay" class="text-slate-200 font-bold">You are not currently in a Gang.</p>
+                        <div id="gangMembersList" class="space-y-1 text-slate-400 text-[11px]"></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="createGang()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow">Create Gang (🪙 10,000)</button>
+                        <button onclick="joinGang()" class="flex-1 bg-slate-950 hover:bg-slate-900 text-slate-200 font-bold py-2.5 rounded-xl text-xs border border-slate-800">Find Squad</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: ACHIEVEMENTS -->
+            <div id="tabAchievements" class="tab-content space-y-4">
+                <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-6 rounded-3xl border border-amber-500/30 space-y-3 shadow-2xl">
+                    <h2 class="text-xl font-black text-amber-400">🏆 Career Achievements & Titles</h2>
+                    <div id="achievementsList" class="space-y-2.5 text-xs max-h-96 overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+
+            <!-- TAB 5: STORE VAULT -->
+            <div id="tabShop" class="tab-content space-y-6">
+                <!-- TIMED LEVEL BOOSTERS -->
+                <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-6 rounded-3xl border border-amber-500/30 space-y-4 shadow-2xl">
+                    <h2 class="text-lg font-black text-amber-400 flex items-center gap-2">⚡ Timed Level Boosters</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5 shadow-inner">
+                            <div class="text-2xl">⏱️</div>
+                            <div class="text-xs font-black text-slate-100">3-Hour Rapid Booster</div>
+                            <div class="text-[10px] text-slate-400">2x XP for 3 Hours</div>
+                            <button onclick="buyTimedBooster('3-Hour Booster', 3, 50)" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 rounded-lg text-xs mt-1">💎 50 Gems</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5 shadow-inner">
+                            <div class="text-2xl">⌛</div>
+                            <div class="text-xs font-black text-slate-100">24-Hour Syndicate Pass</div>
+                            <div class="text-[10px] text-slate-400">2x XP for 24 Hours</div>
+                            <button onclick="buyTimedBooster('24-Hour Pass', 24, 150)" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 rounded-lg text-xs mt-1">💎 150 Gems</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5 shadow-inner">
+                            <div class="text-2xl">🔥</div>
+                            <div class="text-xs font-black text-slate-100">48-Hour Weekend War</div>
+                            <div class="text-[10px] text-slate-400">3x XP for 48 Hours</div>
+                            <button onclick="buyTimedBooster('48-Hour War', 48, 300)" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 rounded-lg text-xs mt-1">💎 300 Gems</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COINS SECTION -->
+                <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-6 rounded-3xl border border-amber-500/30 space-y-4 shadow-2xl">
+                    <h2 class="text-lg font-black text-amber-400 flex items-center gap-2">🪙 Coin Vault Deals</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center">
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">🪙</div>
+                            <div class="text-xs font-bold text-slate-200">5,000 Coins</div>
+                            <button onclick="buyPackage('5k Coins', 0.99)" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold py-1.5 rounded-lg text-xs mt-2">$0.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">💰</div>
+                            <div class="text-xs font-bold text-slate-200">25,000 Coins</div>
+                            <button onclick="buyPackage('25k Coins', 3.99)" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold py-1.5 rounded-lg text-xs mt-2">$3.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">💳</div>
+                            <div class="text-xs font-bold text-slate-200">100,000 Coins</div>
+                            <button onclick="buyPackage('100k Coins', 9.99)" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold py-1.5 rounded-lg text-xs mt-2">$9.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">🧰</div>
+                            <div class="text-xs font-bold text-slate-200">500,000 Coins</div>
+                            <button onclick="buyPackage('500k Coins', 24.99)" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold py-1.5 rounded-lg text-xs mt-2">$24.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 col-span-2 sm:col-span-1 shadow-inner">
+                            <div class="text-2xl">🏦</div>
+                            <div class="text-xs font-bold text-slate-200">1.5M Coins</div>
+                            <button onclick="buyPackage('1.5M Coins', 59.99)" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold py-1.5 rounded-lg text-xs mt-2">$59.99</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GEMS SECTION -->
+                <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-6 rounded-3xl border border-amber-500/30 space-y-4 shadow-2xl">
+                    <h2 class="text-lg font-black text-cyan-400 flex items-center gap-2">💎 Gem Vault Deals</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center">
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">💎</div>
+                            <div class="text-xs font-bold text-slate-200">100 Gems</div>
+                            <button onclick="buyPackage('100 Gems', 0.99)" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-1.5 rounded-lg text-xs mt-2">$0.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">🔹</div>
+                            <div class="text-xs font-bold text-slate-200">550 Gems</div>
+                            <button onclick="buyPackage('550 Gems', 4.99)" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-1.5 rounded-lg text-xs mt-2">$4.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">🔷</div>
+                            <div class="text-xs font-bold text-slate-200">1,200 Gems</div>
+                            <button onclick="buyPackage('1200 Gems', 9.99)" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-1.5 rounded-lg text-xs mt-2">$9.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-inner">
+                            <div class="text-2xl">👑</div>
+                            <div class="text-xs font-bold text-slate-200">3,500 Gems</div>
+                            <button onclick="buyPackage('3500 Gems', 24.99)" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-1.5 rounded-lg text-xs mt-2">$24.99</button>
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1 col-span-2 sm:col-span-1 shadow-inner">
+                            <div class="text-2xl">⚡</div>
+                            <div class="text-xs font-bold text-slate-200">8,000 Gems</div>
+                            <button onclick="buyPackage('8000 Gems', 49.99)" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-1.5 rounded-lg text-xs mt-2">$49.99</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- BOTTOM NAV BAR -->
+        <nav class="bg-slate-900/95 border-t border-amber-500/20 fixed bottom-0 left-0 right-0 z-40 p-2 backdrop-blur-md shadow-2xl">
+            <div class="max-w-md mx-auto grid grid-cols-5 gap-1 text-center">
+                <button onclick="switchTab('tabLobby')" class="p-2 text-slate-400 hover:text-amber-400 flex flex-col items-center text-[10px] font-bold transition">
+                    <span class="text-lg">🎮</span> Lobby
+                </button>
+                <button onclick="switchTab('tabNightClub')" class="p-2 text-slate-400 hover:text-amber-400 flex flex-col items-center text-[10px] font-bold transition">
+                    <span class="text-lg">🌃</span> Club
+                </button>
+                <button onclick="switchTab('tabGangWars')" class="p-2 text-slate-400 hover:text-amber-400 flex flex-col items-center text-[10px] font-bold transition">
+                    <span class="text-lg">🛡️</span> Gangs
+                </button>
+                <button onclick="switchTab('tabAchievements')" class="p-2 text-slate-400 hover:text-amber-400 flex flex-col items-center text-[10px] font-bold transition">
+                    <span class="text-lg">🏆</span> Awards
+                </button>
+                <button onclick="switchTab('tabShop')" class="p-2 text-slate-400 hover:text-amber-400 flex flex-col items-center text-[10px] font-bold transition">
+                    <span class="text-lg">🛒</span> Shop
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- ================= SCREEN 4: AUTOMATED ACTIVE GAME DASHBOARD ================= -->
+    <div id="screenDashboard" class="hidden max-w-xl mx-auto p-4 sm:p-6 pb-24 space-y-6 bg-game-radial min-h-screen">
+        <div id="dashboardBanner" class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-5 shadow-2xl flex justify-between items-center transition-colors duration-500">
+            <div>
+                <span id="badgePhase" class="px-3 py-1 rounded-full text-xs font-black uppercase bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Night Phase</span>
+                <h2 id="titlePhase" class="text-lg font-black mt-1 text-amber-400">Night Falls on the Village...</h2>
+            </div>
+            <div class="text-right font-mono text-[11px] text-amber-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 shadow-inner">
+                <span>Room: </span><span id="displayGameRoomCode" class="font-bold">---</span>
+            </div>
+        </div>
+
+        <!-- 3D/2D CANVAS ROUND TABLE VISUALIZATION -->
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-4 shadow-2xl text-center space-y-2">
+            <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Town Square Round Table</h3>
+            <canvas id="votingCanvas" width="340" height="240" class="mx-auto rounded-xl bg-slate-950 border border-slate-800 shadow-inner"></canvas>
+        </div>
+
+        <!-- SECRET MAFIA NIGHT CHAT -->
+        <div id="mafiaSecretChatCard" class="hidden bg-red-950/20 border border-red-900/40 rounded-2xl p-4 shadow-2xl space-y-2">
+            <h4 class="text-xs font-bold uppercase text-red-400 flex items-center gap-2">🗡️ Secret Mafia Target Channel</h4>
+            <div id="mafiaChatMessages" class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 h-24 overflow-y-auto space-y-1 text-xs font-mono shadow-inner"></div>
+            <div class="flex gap-2">
+                <input type="text" id="inputMafiaChat" placeholder="Discuss target in secret..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+                <button onclick="sendMafiaChat()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow">Send 💬</button>
+            </div>
+        </div>
+
+        <!-- ROLE & ACTIONS CARDS -->
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-2">
+            <span class="text-xs uppercase text-slate-400">Player: <strong id="displayPlayerName" class="text-slate-200"></strong></span>
+            <h3 class="text-xl font-black text-white mt-1">Your Role: <span id="displayPlayerRole" class="text-amber-400">Citizen</span></h3>
+            <p id="displayRoleDesc" class="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800 leading-relaxed shadow-inner"></p>
+        </div>
+
+        <div id="nightActionCard" class="hidden bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-3">
+            <h3 class="text-sm font-black text-red-400">🌙 Night Action</h3>
+            <div id="nightActionContent" class="space-y-2 text-xs"></div>
+        </div>
+
+        <div id="dayActionCard" class="hidden bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
+            <h3 class="text-sm font-black text-amber-400">☀️ Town Square Vote</h3>
+            <p class="text-xs text-slate-400">Cast your single vote to eliminate a suspected Mafia member:</p>
+            <div class="flex gap-2">
+                <select id="selectVoteTarget" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"></select>
+                <button onclick="castVote()" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow">Cast Vote 🗳️</button>
+            </div>
+            <div id="votingStatusMsg" class="text-xs text-indigo-300 font-mono italic"></div>
+
+            <div class="border-t border-slate-800 pt-3 space-y-2">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">📊 Live Voting Tally & Pending List</h4>
+                <div id="liveVotingTrackerList" class="space-y-1.5 max-h-36 overflow-y-auto font-mono text-xs"></div>
+            </div>
+        </div>
+
+        <div id="dayChatSection" class="hidden bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-3">
+            <h3 class="text-sm font-black text-amber-400">💬 Village Discussion Chat</h3>
+            <div id="chatMessagesList" class="bg-slate-950 p-3 rounded-xl border border-slate-800 h-32 overflow-y-auto space-y-2 text-xs font-mono shadow-inner"></div>
+            <div class="flex gap-2">
+                <input type="text" id="chatInputMessage" placeholder="Type your message..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200" onkeypress="if(event.key==='Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow">Send ✉️</button>
+            </div>
+        </div>
+
+        <!-- ROSTER CENSUS -->
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-3">
+            <h3 class="text-sm font-black text-slate-200">Village Census</h3>
+            <div id="playerGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+        </div>
+    </div>
+
+    <!-- PRIVATE ROOM SELECTION MODAL -->
+    <div id="privateRoomModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/40 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-amber-500/20 pb-3">
+                <h3 class="text-md font-black text-amber-400">🔒 Private Room Options</h3>
+                <button onclick="closePrivateRoomModal()" class="text-slate-400 text-sm">✕</button>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="createNewPrivateRoom()" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-3 rounded-xl text-xs shadow uppercase tracking-wider">
+                    ✨ Create New Private Table
+                </button>
+
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-slate-800"></div>
+                    <span class="flex-shrink mx-3 text-slate-500 text-[10px] uppercase font-mono">Or Join Existing</span>
+                    <div class="flex-grow border-t border-slate-800"></div>
+                </div>
+
+                <div class="space-y-2">
+                    <input type="text" id="inputJoinPrivateCode" placeholder="Enter 6-Digit Code" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-center text-slate-200 uppercase tracking-widest font-mono focus:outline-none focus:border-amber-500">
+                    <button onclick="joinPrivateRoomByCode()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs border border-slate-700 shadow">
+                        Join Table ➔
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRIVATE PRE-GAME WAITING LOBBY MODAL -->
+    <div id="privateLobbyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-amber-500/20 pb-3">
+                <div>
+                    <h3 class="text-md font-black text-amber-400">🔒 Private Room Lobby</h3>
+                    <div class="text-[10px] text-slate-400 font-mono">Code: <strong id="lobbyCodeDisplay" class="text-amber-400 font-bold">------</strong></div>
+                </div>
+                <button onclick="leavePrivateLobby()" class="text-slate-400 hover:text-red-400 text-sm">Leave ✕</button>
+            </div>
+
+            <!-- Joined Players List -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs font-bold text-slate-300">
+                    <span>Joined Players (<span id="lobbyPlayerCount">1</span>/<span id="lobbyMaxPlayers">8</span>)</span>
+                    <span id="lobbyStatusText" class="text-amber-400 font-mono">Waiting for players...</span>
+                </div>
+                <div id="lobbyPlayerRoster" class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-2xl border border-slate-800 max-h-48 overflow-y-auto">
+                    <!-- Dynamic Player Roster Cards -->
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div id="lobbyActionContainer" class="pt-2">
+                <!-- Rendered dynamically in app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- LEVEL 10 UNLOCK POPUP MODAL -->
+    <div id="level10Modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-b from-slate-900 via-amber-950/40 to-slate-950 border-2 border-amber-500/60 rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+            <div class="text-5xl animate-bounce">👑</div>
+            <h2 class="text-2xl font-black text-amber-400">Level 10 Achieved!</h2>
+            <p class="text-xs text-slate-300">You've unlocked the exclusive **Beginner Syndicate Pack** ($0.99 for 10k Coins, 100 Gems & Godfather Border)!</p>
+            <button onclick="claimLevel10StarterPack()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl text-xs shadow-lg uppercase">Claim Pack — $0.99 🚀</button>
+            <button onclick="closeLevel10Modal()" class="text-xs text-slate-500 hover:text-slate-300">Maybe Later</button>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL WITH EDITABLE NAME & AVATAR PICKER -->
+    <div id="profileModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/40 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-amber-500/20 pb-3">
+                <h3 class="text-md font-black text-amber-400">👤 Player Profile</h3>
+                <button onclick="closeProfileModal()" class="text-slate-400 text-sm">✕</button>
+            </div>
+            
+            <div class="text-center space-y-2">
+                <div id="modalAvatarPreview" class="w-16 h-16 mx-auto rounded-full bg-slate-950 border-2 border-amber-500 flex items-center justify-center text-3xl shadow-lg overflow-hidden">👑</div>
+                
+                <div class="flex items-center justify-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800 shadow-inner">
+                    <span onclick="setProfileAvatar('👑')" class="cursor-pointer text-lg hover:scale-125 transition">👑</span>
+                    <span onclick="setProfileAvatar('🕵️')" class="cursor-pointer text-lg hover:scale-125 transition">🕵️</span>
+                    <span onclick="setProfileAvatar('🦁')" class="cursor-pointer text-lg hover:scale-125 transition">🦁</span>
+                    <span onclick="setProfileAvatar('⚡')" class="cursor-pointer text-lg hover:scale-125 transition">⚡</span>
+                    <label class="cursor-pointer bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-[10px] font-bold px-2 py-1 rounded-lg border border-indigo-500/40">
+                        📷 Photo <input type="file" accept="image/*" class="hidden" onchange="uploadProfilePhoto(event)">
+                    </label>
+                </div>
+
+                <div class="space-y-1 text-left pt-1">
+                    <label class="block text-[10px] font-bold uppercase text-slate-400">Display Name:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="inputEditProfileName" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 shadow-inner">
+                        <button onclick="saveProfileName()" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs shadow">Save</button>
+                    </div>
+                </div>
+
+                <div id="profileAuthSource" class="text-[10px] text-emerald-400 font-mono text-left pt-1">Logged in via: Guest Mode</div>
+            </div>
+
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs shadow-inner">
+                <h5 class="text-[10px] font-bold uppercase text-amber-400 tracking-wider">Career Win Record</h5>
+                <div class="flex justify-between"><span>6-Player Wins:</span><strong id="win6p" class="text-amber-400 font-mono">0</strong></div>
+                <div class="flex justify-between"><span>8-Player Wins:</span><strong id="win8p" class="text-amber-400 font-mono">0</strong></div>
+                <div class="flex justify-between"><span>12-Player Wins:</span><strong id="win12p" class="text-amber-400 font-mono">0</strong></div>
+                <div class="flex justify-between"><span>Night Club Wins:</span><strong id="winClub" class="text-purple-400 font-mono">0</strong></div>
+            </div>
+
+            <button onclick="closeProfileModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs shadow">Close Profile</button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/40 rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-amber-500/20 pb-3">
+                <h3 class="text-md font-black text-amber-400">⚙️ Game Settings</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 text-sm">✕</button>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1 shadow-inner">
+                <div class="text-[10px] uppercase font-bold text-amber-400">Account Connection</div>
+                <div id="settingsAccountType" class="text-slate-200 font-bold">Guest Account</div>
+            </div>
+
+            <a href="mailto:pro8446941@gmail.com?subject=Mafia%20Legends%20Support%20Request" class="block bg-slate-950 hover:bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs text-center font-bold text-indigo-400 transition shadow-inner">
+                ✉️ Help & Support (pro8446941@gmail.com)
+            </a>
+
+            <div id="settingsAuthActionBox"></div>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div id="gameOverModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/50 rounded-3xl max-w-sm w-full p-8 shadow-2xl text-center space-y-6">
+            <div id="gameOverIcon" class="text-6xl animate-bounce">🏆</div>
+            <h2 id="gameOverTitle" class="text-2xl font-black text-amber-400">Game Over</h2>
+            <p id="gameOverDesc" class="text-xs text-slate-300 leading-relaxed"></p>
+            <button onclick="window.location.reload()" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-3 rounded-xl text-xs transition shadow-lg">Return to Main Lobby 🔄</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

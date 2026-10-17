@@ -1,0 +1,31 @@
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.6); }
+}
+
+@keyframes float-anim {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+.bg-game-radial {
+    background: radial-gradient(circle at 50% 20%, #181824 0%, #09090b 100%);
+}
+
+.mafia-glow { animation: pulse-glow 3s infinite; }
+.floating { animation: float-anim 3s ease-in-out infinite; }
+
+.luxury-glow {
+    text-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.eliminated-card {
+    filter: grayscale(100%);
+    background-color: #09090b !important;
+    border-color: #27272a !important;
+    opacity: 0.5;
+}
+.eliminated-name { text-decoration: line-through; color: #ef4444; }
