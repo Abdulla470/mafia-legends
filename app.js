@@ -716,3 +716,27 @@ function buyTimedBooster(name, hours, cost) {
 
 function createGang() { alert("Gang creation requires 10,000 Coins."); }
 function joinGang() { alert("Searching open squads..."); }
+// Safe Realtime Sync (No infinite loops)
+function subscribeToRoomChanges(roomCode) {
+    supabaseClient
+      .channel(`room_${roomCode}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'game_rooms',
+          filter: `room_code=eq.${roomCode}`
+        },
+        (payload) => {
+          // Just update local game state and refresh UI safely
+          if (payload.new && payload.new.state) {
+            gameState = payload.new.state;
+            if (typeof renderLobby === 'function') {
+              renderLobby();
+            }
+          }
+        }
+      )
+      .subscribe();
+  }
