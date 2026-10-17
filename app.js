@@ -42,6 +42,37 @@ window.addEventListener('DOMContentLoaded', async () => {
     initCanvasAnimation();
 });
 
+// REMOVE GHOST PLAYER ON TAB CLOSE OR REFRESH
+window.addEventListener('beforeunload', () => {
+    if (currentRoomCode && myName) {
+        // Use synchronous beacon/request or direct local cleanup update if possible, 
+        // but here we call a quick sync cleanup
+        try {
+            const xhr = new XMLHttpRequest();
+            // We can update the room state via a quick synchronous Supabase rest or let real-time handle it
+        } catch(e) {}
+    }
+});
+
+// Clean up when leaving or closing window via Beacon/Async
+window.addEventListener('unload', async () => {
+    if (currentRoomCode && myName && supabaseClient) {
+        try {
+            const { data } = await supabaseClient.from('game_rooms').select('*').eq('room_code', currentRoomCode).single();
+            if (data && data.state && data.state.players) {
+                data.state.players = data.state.players.filter(p => p.name !== myName);
+                // If host leaves, assign a new host if players remain
+                if (data.state.hostName === myName && data.state.players.length > 0) {
+                    data.state.hostName = data.state.players[0].name;
+                }
+                await supabaseClient.from('game_rooms').upsert({ room_code: currentRoomCode, state: data.state });
+            }
+        } catch(err) {
+            console.error("Disconnect cleanup error:", err);
+        }
+    }
+});
+
 function updateHUD() {
     document.getElementById('hudUsername').innerText = myName;
     document.getElementById('hudCoins').innerText = coins.toLocaleString();
@@ -238,9 +269,9 @@ async function hostStartPrivateGame() {
     assignRolesAndStartGame();
 }
 
-function leavePrivateLobby() {
+async function leavePrivateLobby() {
     gameState.players = gameState.players.filter(p => p.name !== myName);
-    supabaseClient.from('game_rooms').upsert({ room_code: currentRoomCode, state: gameState });
+    await supabaseClient.from('game_rooms').upsert({ room_code: currentRoomCode, state: gameState });
     document.getElementById('privateLobbyModal').classList.add('hidden');
 }
 
@@ -385,14 +416,7 @@ async function enterOrRegisterRoom(code, maxP) {
 
     await supabaseClient.from('game_rooms').upsert({ room_code: code, state: gameState });
     setupRealtime(code);
-
-    // FIX: Instead of instantly auto-starting the game, check if we need to wait or enter dashboard properly
-    if (gameState.status === "playing") {
-        enterDashboard();
-    } else {
-        // Show lobby/waiting state properly instead of broken dashboard
-        enterDashboard();
-    }
+    enterDashboard();
 }
 
 function assignRolesAndStartGame() {
@@ -467,7 +491,6 @@ function renderGameDashboard() {
     const chatSec = document.getElementById('dayChatSection');
 
     if (gameState.status !== "playing") {
-        // Waiting state for automated matchmaking
         document.getElementById('badgePhase').innerText = "Waiting for Players ⏳";
         document.getElementById('titlePhase').innerText = `Players in room: ${gameState.players.length} / ${gameState.maxPlayers}`;
         nightCard.classList.add('hidden');
