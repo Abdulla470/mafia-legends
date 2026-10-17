@@ -123,6 +123,7 @@ async function registerWithEmail() {
     }
     alert("Account created!"); enterMainHub();
 }
+
 function enterMainHub() {
     document.getElementById('screenAuth').classList.add('hidden');
     document.getElementById('screenMainHub').classList.remove('hidden');
@@ -170,7 +171,12 @@ async function enterPrivateLobby(code, maxP, createdByMe) {
         };
     } else {
         gameState = data.state;
-        if (!gameState.players.some(p => p.name === myName)) {
+        if (!gameState.players) gameState.players = [];
+        
+        const existingIdx = gameState.players.findIndex(
+            p => (p.name || p).toString().trim().toLowerCase() === myName.trim().toLowerCase()
+        );
+        if (existingIdx === -1) {
             gameState.players.push({ name: myName, role: 'Citizen', alive: true, avatar: myAvatar, ready: false });
         }
     }
@@ -201,10 +207,10 @@ function renderPrivateLobbyUI() {
 
     const actionBox = document.getElementById('lobbyActionContainer');
     if (myName === gameState.hostName) {
-        const canStart = gameState.players.length >= 4;
+        const canStart = gameState.players.length >= 2;
         actionBox.innerHTML = `
             <button onclick="hostStartPrivateGame()" ${canStart ? '' : 'disabled'} class="w-full ${canStart ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black' : 'bg-slate-800 text-slate-500 cursor-not-allowed'} py-3 rounded-xl text-xs uppercase shadow tracking-wider transition">
-                ${canStart ? '🚀 Start Game Now' : 'Need at least 4 Players to Start'}
+                ${canStart ? '🚀 Start Game Now' : 'Need at least 2 Players to Start'}
             </button>`;
     } else {
         const me = gameState.players.find(p => p.name === myName);
@@ -225,11 +231,10 @@ async function togglePlayerReady() {
 }
 
 async function hostStartPrivateGame() {
-    if (gameState.players.length < 4) {
-        alert("You need at least 4 players to start a private game.");
+    if (gameState.players.length < 2) {
+        alert("You need at least 2 players to start a private game.");
         return;
     }
-    document.getElementById('privateLobbyModal').classList.add('hidden');
     assignRolesAndStartGame();
 }
 
@@ -309,7 +314,7 @@ function openSettingsModal() {
             </button>`;
     } else {
         actionBox.innerHTML = `
-            <button onclick="logoutPlayer()" class="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 font-bold py-2.5 rounded-xl text-xs border border-red-500/40 shadow">
+            <button onclick="logoutPlayer()" class="w-full bg-red-600/25 hover:bg-red-600/35 text-red-400 font-bold py-2.5 rounded-xl text-xs border border-red-500/40 shadow">
                 Sign Out / Log Out 🚪
             </button>`;
     }
@@ -368,17 +373,17 @@ async function enterOrRegisterRoom(code, maxP) {
         };
     } else {
         gameState = data.state;
-        if (!gameState.players.some(p => p.name === myName)) {
+        if (!gameState.players) gameState.players = [];
+
+        const existingIdx = gameState.players.findIndex(
+            p => (p.name || p).toString().trim().toLowerCase() === myName.trim().toLowerCase()
+        );
+        if (existingIdx === -1) {
             gameState.players.push({ name: myName, role: 'Citizen', alive: true, avatar: myAvatar });
         }
     }
 
-    if (gameState.players.length >= gameState.maxPlayers && gameState.status === "waiting") {
-        assignRolesAndStartGame();
-    } else {
-        await supabaseClient.from('game_rooms').upsert({ room_code: code, state: gameState });
-    }
-
+    await supabaseClient.from('game_rooms').upsert({ room_code: code, state: gameState });
     setupRealtime(code);
     enterDashboard();
 }
@@ -400,7 +405,7 @@ function assignRolesAndStartGame() {
     gameState.phase = "night";
     gameState.votes = {};
     gameState.nightActions = { mafiaTarget: null, doctorTarget: null, policeTarget: null };
-    gameState.lastNightResult = "Game automatically started! Night falls.";
+    gameState.lastNightResult = "Game started! Night falls.";
     
     supabaseClient.from('game_rooms').upsert({ room_code: currentRoomCode, state: gameState });
 }
@@ -660,83 +665,45 @@ function renderPlayerGrid() {
     document.getElementById('playerGrid').innerHTML = gameState.players.map(p => `
         <div class="p-3 rounded-xl border flex justify-between items-center ${p.alive ? 'bg-slate-950 border-slate-800 shadow-inner' : 'eliminated-card'}">
             <div class="flex items-center gap-2">
-                <span class="text-base">${p.avatar || '👤'}</span>
+                <span class="text-xl">${p.avatar || '👤'}</span>
                 <div>
-                    <span class="font-bold text-xs ${p.alive ? 'text-slate-200' : 'eliminated-name'}">${p.name}</span>
-                    <div class="text-[10px] text-slate-400">${p.alive ? '🟢 Alive' : '💀 Eliminated'}</div>
+                    <div class="font-bold text-slate-200 text-xs">${p.name} ${p.name === gameState.hostName ? '👑' : ''}</div>
+                    <div class="text-[10px] text-slate-400">${p.alive ? 'Active in Village' : 'Eliminated 💀'}</div>
                 </div>
             </div>
-            <span class="text-xs px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-400 font-semibold">${(!p.alive || p.name === myName) ? p.role : 'Secret'}</span>
+            <span class="text-[10px] font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
+                ${p.alive ? 'Alive' : 'Dead'}
+            </span>
         </div>
     `).join('');
 }
 
-let canvasAngle = 0;
 function initCanvasAnimation() {
-    const canvas = document.getElementById('votingCanvas'); if(!canvas) return;
+    // Optional background particle animation if canvas exists
+    const canvas = document.getElementById('bgCanvas');
+    if(!canvas) return;
     const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    let particles = Array.from({length: 30}, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2,
+        speedX: (Math.random() - 0.5) * 0.2,
+        speedY: (Math.random() - 0.5) * 0.2
+    }));
 
-    function draw() {
+    function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.beginPath(); ctx.arc(canvas.width/2, canvas.height/2, 55, 0, Math.PI * 2);
-        ctx.fillStyle = '#09090b'; ctx.fill(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.stroke();
-
-        const players = gameState.players.length > 0 ? gameState.players : [{name:'P1'},{name:'P2'},{name:'P3'},{name:'P4'},{name:'P5'},{name:'P6'}];
-        canvasAngle += 0.005;
-
-        players.forEach((p, idx) => {
-            const angle = canvasAngle + (idx * (Math.PI * 2 / players.length));
-            const x = canvas.width/2 + Math.cos(angle) * 80;
-            const y = canvas.height/2 + Math.sin(angle) * 80;
-
-            ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI * 2);
-            ctx.fillStyle = p.alive === false ? '#27272a' : '#f59e0b'; ctx.fill();
-            ctx.fillStyle = '#ffffff'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
-            ctx.fillText(p.name ? p.name.substring(0, 4) : 'User', x, y + 20);
+        ctx.fillStyle = 'rgba(217, 119, 6, 0.3)';
+        particles.forEach(p => {
+            p.x += p.speedX; p.y += p.speedY;
+            if(p.x < 0) p.x = canvas.width; if(p.x > canvas.width) p.x = 0;
+            if(p.y < 0) p.y = canvas.height; if(p.y > canvas.height) p.y = 0;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
         });
-        requestAnimationFrame(draw);
+        requestAnimationFrame(animate);
     }
-    draw();
+    animate();
 }
-
-function buyPackage(pkg, price) {
-    alert(`Initiating Purchase for ${pkg} ($${price})...`);
-}
-
-function buyTimedBooster(name, hours, cost) {
-    if (gems >= cost) {
-        gems -= cost;
-        localStorage.setItem('mafia_gems', gems);
-        updateHUD();
-        alert(`Activated ${name}! Expires in ${hours} hours.`);
-    } else {
-        alert("Insufficient Gems! Top up in the Gem Vault.");
-    }
-}
-
-function createGang() { alert("Gang creation requires 10,000 Coins."); }
-function joinGang() { alert("Searching open squads..."); }
-// Safe Realtime Sync (No infinite loops)
-function subscribeToRoomChanges(roomCode) {
-    supabaseClient
-      .channel(`room_${roomCode}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'game_rooms',
-          filter: `room_code=eq.${roomCode}`
-        },
-        (payload) => {
-          // Just update local game state and refresh UI safely
-          if (payload.new && payload.new.state) {
-            gameState = payload.new.state;
-            if (typeof renderLobby === 'function') {
-              renderLobby();
-            }
-          }
-        }
-      )
-      .subscribe();
-  }
